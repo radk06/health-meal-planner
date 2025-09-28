@@ -1,0 +1,4 @@
+[
+  { "id": "ing_001", "name": "chicken breast", "quantity": "2 pieces", "expires": "2025-10-05" },
+  { "id": "ing_002", "name": "spaghetti", "quantity": "500g", "expires": "2026-01-01" }
+]

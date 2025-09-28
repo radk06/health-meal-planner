@@ -1,0 +1,16 @@
+[
+  {
+    "id": "meal_001",
+    "title": "Grilled Chicken Salad",
+    "ingredients": ["chicken breast", "lettuce", "tomato", "olive oil"],
+    "calories": 450,
+    "tags": ["healthy", "low-carb"]
+  },
+  {
+    "id": "meal_002",
+    "title": "Spaghetti Bolognese",
+    "ingredients": ["spaghetti", "ground beef", "tomato sauce", "onion"],
+    "calories": 700,
+    "tags": ["italian", "high-protein"]
+  }
+]
