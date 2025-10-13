@@ -12,5 +12,12 @@
     "ingredients": ["spaghetti", "ground beef", "tomato sauce", "onion"],
     "calories": 700,
     "tags": ["italian", "high-protein"]
+  },
+  {
+    "id": "meal_003",
+    "title": "Chicken Shawarma Wrap",
+    "ingredients": ["chicken thigh", "pita", "garlic sauce", "lettuce", "tomato", "pickles"],
+    "calories": 650,
+    "tags": ["middle-eastern", "high-protein"]
   }
 ]

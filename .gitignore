@@ -1,0 +1,11 @@
+﻿node_modules/
+.env
+.env.*
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+dist/
+coverage/
+.DS_Store
+Thumbs.db
+public/*.cache
