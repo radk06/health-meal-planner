@@ -1,20 +1,31 @@
-import crypto from "node:crypto";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
-export function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
-  const hash = crypto.pbkdf2Sync(password, salt, 100_000, 64, "sha512").toString("hex");
-  return { salt, hash };
+/**
+ * Hash a plaintext password
+ */
+export async function hashPassword(plain) {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(plain, salt);
 }
 
-export function verifyPassword(password, salt, expectedHash) {
-  const computed = crypto.pbkdf2Sync(password, salt, 100_000, 64, "sha512").toString("hex");
-  // Use constant-time comparison
-  return crypto.timingSafeEqual(Buffer.from(computed, "hex"), Buffer.from(expectedHash, "hex"));
+/**
+ * Compare plaintext password with hashed one
+ */
+export async function comparePassword(plain, hash) {
+  return bcrypt.compare(plain, hash);
 }
 
-// Minimal HMAC-signed token for coursework demos (NOT a JWT)
-export function makeToken(payload) {
-  const secret = process.env.APP_SECRET || "dev-secret";
-  const base = Buffer.from(JSON.stringify({ ...payload, iat: Date.now() })).toString("base64url");
-  const sig = crypto.createHmac("sha256", secret).update(base).digest("base64url");
-  return `${base}.${sig}`;
+/**
+ * Generate signed JWT for user
+ */
+export function signToken(user) {
+  const payload = {
+    id: user._id,
+    email: user.email,
+    role: user.role,
+  };
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  });
 }

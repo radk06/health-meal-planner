@@ -1,66 +1,70 @@
-import { Router } from "express";
-import { validate } from "../../middlewares/validate.js";
-import { readJson, writeJson } from "../../utils/file-db.js";
+import express from "express";
+import validate from "../../middlewares/validate.js";
+import User from "../users/users.model.js";
 import { signupRules, loginRules } from "./auth.validators.js";
-import { hashPassword, verifyPassword, makeToken } from "./crypto.js";
+import { hashPassword, comparePassword, signToken } from "./crypto.js";
 
-const router = Router();
-const USERS_PATH = "src/modules/users/users.data.json";
+const router = express.Router();
 
-// Helpers
-function publicUser(u) {
-  const { passwordHash, passwordSalt, ...safe } = u;
-  return safe;
-}
-function emailEq(a, b) { return a.toLowerCase() === b.toLowerCase(); }
-
-// POST /api/auth/signup
-router.post("/signup", validate(signupRules), async (req, res, next) => {
+/**
+ * POST /api/auth/signup
+ * Register new user and issue JWT.
+ */
+router.post("/signup", signupRules, validate, async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, goals } = req.body;
 
-    const users = await readJson(USERS_PATH, []);
-    if (users.some(u => emailEq(u.email, email))) {
-      return res.status(400).json({ error: "Email already registered" });
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(409).json({ message: "Email already registered" });
     }
 
-    const { salt, hash } = hashPassword(password);
-    const id = "u" + Math.random().toString(36).slice(2, 10);
+    const passwordHash = await hashPassword(password);
+    const user = await User.create({ name, email, goals, passwordHash });
 
-    const newUser = {
-      id,
-      name,
-      email,
-      role: "user",
-      goals: { target: "balanced" },
-      passwordSalt: salt,
-      passwordHash: hash
-    };
-
-    users.push(newUser);
-    await writeJson(USERS_PATH, users);
-
-    const token = makeToken({ sub: id, email });
-    res.status(201).json({ token, user: publicUser(newUser) });
+    const token = signToken(user);
+    res.status(201).json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (err) {
     next(err);
   }
 });
 
-// POST /api/auth/login
-router.post("/login", validate(loginRules), async (req, res, next) => {
+/**
+ * POST /api/auth/login
+ * Authenticate existing user.
+ */
+router.post("/login", loginRules, validate, async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const users = await readJson(USERS_PATH, []);
-    const user = users.find(u => emailEq(u.email, email));
-    if (!user) return res.status(401).json({ error: "Invalid email or password" });
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
 
-    const ok = verifyPassword(password, user.passwordSalt, user.passwordHash);
-    if (!ok) return res.status(401).json({ error: "Invalid email or password" });
+    const isMatch = await comparePassword(password, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
 
-    const token = makeToken({ sub: user.id, email: user.email });
-    res.status(200).json({ token, user: publicUser(user) });
+    const token = signToken(user);
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (err) {
     next(err);
   }

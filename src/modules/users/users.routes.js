@@ -1,46 +1,82 @@
-import { Router } from "express";
-import { validate } from "../../middlewares/validate.js";
+import express from "express";
+import User from "./users.model.js";
+import validate from "../../middlewares/validate.js";
 import {
-  getAllUsers, getUserById, addNewUser, updateExistingUser, deleteUser
-} from "./users.model.js";
-import {
-  listUsersRules, userIdRules, createUserRules, updateUserRules
+  listUserRules,
+  updateUserRules,
 } from "./users.validators.js";
+import {
+  requireAuth,
+  requireRole,
+} from "../../middlewares/auth.js";
 
-const router = Router();
+const router = express.Router();
 
-router.get("/", validate(listUsersRules), async (req, res, next) => {
-  try { res.json(await getAllUsers(req.query)); }
-  catch (e) { next(e); }
-});
-
-router.get("/:id", validate(userIdRules), async (req, res, next) => {
+/**
+ * GET /api/users
+ * Admin-only — list all users with pagination
+ */
+router.get("/", requireAuth, requireRole("admin"), listUserRules, validate, async (req, res, next) => {
   try {
-    const user = await getUserById(req.params.id);
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json(user);
-  } catch (e) { next(e); }
+    const { page = 1, limit = 10 } = req.query;
+    const users = await User.find()
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .select("-passwordHash");
+    const total = await User.countDocuments();
+
+    res.json({
+      data: users,
+      page: Number(page),
+      limit: Number(limit),
+      total,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.post("/", validate(createUserRules), async (req, res, next) => {
-  try { res.status(201).json(await addNewUser(req.body)); }
-  catch (e) { next(e); }
-});
-
-router.put("/:id", validate([...userIdRules, ...updateUserRules]), async (req, res, next) => {
+/**
+ * GET /api/users/me
+ * Authenticated user — return own profile
+ */
+router.get("/me", requireAuth, async (req, res, next) => {
   try {
-    const updated = await updateExistingUser(req.params.id, req.body);
-    if (!updated) return res.status(404).json({ error: "User not found" });
+    const me = await User.findById(req.user.id).select("-passwordHash");
+    if (!me) return res.status(404).json({ message: "User not found" });
+    res.json(me);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * PUT /api/users/:id
+ * Admin-only — update another user's info
+ */
+router.put("/:id", requireAuth, requireRole("admin"), updateUserRules, validate, async (req, res, next) => {
+  try {
+    const update = req.body;
+    const updated = await User.findByIdAndUpdate(req.params.id, update, { new: true }).select("-passwordHash");
+    if (!updated) return res.status(404).json({ message: "User not found" });
     res.json(updated);
-  } catch (e) { next(e); }
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.delete("/:id", validate(userIdRules), async (req, res, next) => {
+/**
+ * DELETE /api/users/:id
+ * Admin-only — delete a user
+ */
+router.delete("/:id", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
-    const ok = await deleteUser(req.params.id);
-    if (!ok) return res.status(404).json({ error: "User not found" });
-    res.json({ success: true });
-  } catch (e) { next(e); }
+    const deleted = await User.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "User not found" });
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

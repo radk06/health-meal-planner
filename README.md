@@ -1,3 +1,15 @@
+Phase 3 – MongoDB Integration
+
+- Connected Express app to MongoDB Atlas using Mongoose.
+- Created schemas for Meals, Ingredients, Users.
+- Implemented CRUD operations replacing JSON storage.
+- Added validation (express-validator) and error handling.
+- Implemented searching, sorting, and pagination.
+- Tested all routes with Postman.
+
+Contributions
+- Radamir Kekukh
+
 Health & Meal Prep Planner — Phase 2 (Modular Express API)
 Overview
 

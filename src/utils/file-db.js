@@ -1,25 +1,29 @@
 import fs from "fs/promises";
 import path from "path";
-const root = path.resolve(process.cwd());
 
-export async function readJson(relPath, fallback = []) {
-  const file = path.join(root, relPath);
+/**
+ * Reads JSON file and parses it.
+ */
+export async function readJSON(filePath) {
   try {
-    const text = await fs.readFile(file, "utf-8");
-    return JSON.parse(text || "[]");
-  } catch (e) {
-    if (e.code === "ENOENT") return fallback;
-    throw e;
+    const data = await fs.readFile(filePath, "utf-8");
+    return JSON.parse(data);
+  } catch (err) {
+    console.error("Error reading JSON file:", err.message);
+    return [];
   }
 }
 
-export async function writeJson(relPath, data) {
-  const file = path.join(root, relPath);
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, JSON.stringify(data, null, 2), "utf-8");
-  return data;
-}
-
-export function genId(prefix = "") {
-  return prefix + Math.random().toString(36).slice(2, 10);
+/**
+ * Writes data to a JSON file.
+ */
+export async function writeJSON(filePath, data) {
+  try {
+    const dir = path.dirname(filePath);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+    console.log(`✅ Saved ${data.length} records to ${filePath}`);
+  } catch (err) {
+    console.error("Error writing JSON file:", err.message);
+  }
 }
