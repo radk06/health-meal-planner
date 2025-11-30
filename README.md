@@ -1,3 +1,27 @@
+Phase 4 - React Frontend Integration
+
+- Added `frontend/` React app inside the same root project.
+- Configured React Router with routes for:
+  - `/` home
+  - `/login` login
+  - `/meals` list meals with search and pagination
+  - `/meals/new` create meal
+  - `/meals/:id/edit` update meal
+- Implemented Axios client with:
+  - Proxy to backend
+  - JWT token support using `Authorization: Bearer` header
+- Built UI for Meals feature:
+  - List, create, update, delete meals through API
+  - Client side validation for required fields and number fields
+  - User friendly success and error messages
+- Login page integrated with `/api/auth/login`.
+- Tested all CRUD flows in the browser and verified data in MongoDB Atlas.
+
+Contributions
+- Radamir Kekukh
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
 Phase 3 – MongoDB Integration
 
 - Connected Express app to MongoDB Atlas using Mongoose.
@@ -9,6 +33,8 @@ Phase 3 – MongoDB Integration
 
 Contributions
 - Radamir Kekukh
+
+--------------------------------------------------------------------------------------------------------------------------------------
 
 Health & Meal Prep Planner — Phase 2 (Modular Express API)
 Overview
