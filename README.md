@@ -1,3 +1,34 @@
+Health & Meal Prep Planner
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+Phase 5 - Authentication, Authorization and MFA
+
+- Implemented email based MFA flow:
+  - Updated `POST /api/auth/login` to validate credentials, generate OTP and email it.
+  - Added `POST /api/auth/verify-otp` to verify OTP and issue final JWT access token.
+  - Stored OTP and expiration on the user document in MongoDB.
+- Added role based access control (RBAC):
+  - Stored user roles in MongoDB on the `User` model.
+  - Created `authenticate` middleware to validate JWT and attach `req.user`.
+  - Created `requireRoles(...roles)` middleware to restrict routes by role.
+  - Applied RBAC to protected routes such as meals create, update, delete.
+- Updated frontend authentication flow:
+  - Login screen now sends email and password to `/api/auth/login`.
+  - New OTP verification screen submits OTP to `/api/auth/verify-otp`.
+  - On success, final JWT token is stored and attached to protected API calls.
+  - Implemented logout that clears token and redirects to login.
+- Tested scenarios:
+  - Valid and invalid credentials.
+  - Correct and incorrect OTP.
+  - Access to protected endpoints without token.
+  - Role based restrictions on admin only routes.
+
+Contributions
+- Radamir Kekukh
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
 Phase 4 - React Frontend Integration
 
 - Added `frontend/` React app inside the same root project.
@@ -36,7 +67,7 @@ Contributions
 
 --------------------------------------------------------------------------------------------------------------------------------------
 
-Health & Meal Prep Planner — Phase 2 (Modular Express API)
+Phase 2 (Modular Express API)
 Overview
 
 Modular Express.js backend with JSON data sources. Implements CRUD in model files, feature-scoped routes, route-level validation, and app-level middlewares.

@@ -6,6 +6,7 @@ import {
   updateMealRules,
   listMealRules,
 } from "./meals.validators.js";
+import { authenticate, requireRoles } from "../../middlewares/auth.js";
 
 const router = express.Router();
 
@@ -19,97 +20,136 @@ const router = express.Router();
  *   page     : page number (default 1)
  *   limit    : page size (default 10)
  *   sort     : e.g. "title", "-calories"
+ *
+ * Access: authenticated users (role "user" or "admin")
  */
-router.get("/", listMealRules, validate, async (req, res, next) => {
-  try {
-    const {
-      q,
-      tag,
-      minCal,
-      maxCal,
-      page = 1,
-      limit = 10,
-      sort = "title",
-    } = req.query;
+router.get(
+  "/",
+  authenticate,
+  requireRoles("user", "admin"),
+  listMealRules,
+  validate,
+  async (req, res, next) => {
+    try {
+      const {
+        q,
+        tag,
+        minCal,
+        maxCal,
+        page = 1,
+        limit = 10,
+        sort = "title",
+      } = req.query;
 
-    const filter = {};
-    if (q) filter.title = new RegExp(q, "i");
-    if (tag) filter.tags = tag;
+      const filter = {};
+      if (q) filter.title = new RegExp(q, "i");
+      if (tag) filter.tags = tag;
 
-    if (minCal || maxCal) {
-      filter.calories = {};
-      if (minCal) filter.calories.$gte = Number(minCal);
-      if (maxCal) filter.calories.$lte = Number(maxCal);
+      if (minCal || maxCal) {
+        filter.calories = {};
+        if (minCal) filter.calories.$gte = Number(minCal);
+        if (maxCal) filter.calories.$lte = Number(maxCal);
+      }
+
+      const docs = await Meal.find(filter)
+        .sort(sort) // allow "-field" desc
+        .skip((page - 1) * limit)
+        .limit(Number(limit));
+
+      const total = await Meal.countDocuments(filter);
+      res.json({
+        data: docs,
+        page: Number(page),
+        limit: Number(limit),
+        total,
+      });
+    } catch (err) {
+      next(err);
     }
-
-    const docs = await Meal.find(filter)
-      .sort(sort) // allow "-field" desc
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
-
-    const total = await Meal.countDocuments(filter);
-    res.json({
-      data: docs,
-      page: Number(page),
-      limit: Number(limit),
-      total,
-    });
-  } catch (err) {
-    next(err);
   }
-});
+);
 
 /**
  * GET /api/meals/:id
+ * Access: authenticated users
  */
-router.get("/:id", async (req, res, next) => {
-  try {
-    const doc = await Meal.findById(req.params.id);
-    if (!doc) return res.status(404).json({ message: "Meal not found" });
-    res.json(doc);
-  } catch (err) {
-    next(err);
+router.get(
+  "/:id",
+  authenticate,
+  requireRoles("user", "admin"),
+  async (req, res, next) => {
+    try {
+      const doc = await Meal.findById(req.params.id);
+      if (!doc) return res.status(404).json({ message: "Meal not found" });
+      res.json(doc);
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 /**
  * POST /api/meals
+ * Access: admin only
  */
-router.post("/", createMealRules, validate, async (req, res, next) => {
-  try {
-    const created = await Meal.create(req.body);
-    res.status(201).json(created);
-  } catch (err) {
-    next(err);
+router.post(
+  "/",
+  authenticate,
+  requireRoles("admin"),
+  createMealRules,
+  validate,
+  async (req, res, next) => {
+    try {
+      const created = await Meal.create(req.body);
+      res.status(201).json(created);
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 /**
  * PUT /api/meals/:id
+ * Access: admin only
  */
-router.put("/:id", updateMealRules, validate, async (req, res, next) => {
-  try {
-    const updated = await Meal.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-    if (!updated) return res.status(404).json({ message: "Meal not found" });
-    res.json(updated);
-  } catch (err) {
-    next(err);
+router.put(
+  "/:id",
+  authenticate,
+  requireRoles("admin"),
+  updateMealRules,
+  validate,
+  async (req, res, next) => {
+    try {
+      const updated = await Meal.findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+      });
+      if (!updated)
+        return res.status(404).json({ message: "Meal not found" });
+      res.json(updated);
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 /**
  * DELETE /api/meals/:id
+ * Access: admin only
  */
-router.delete("/:id", async (req, res, next) => {
-  try {
-    const deleted = await Meal.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: "Meal not found" });
-    res.json({ ok: true });
-  } catch (err) {
-    next(err);
+router.delete(
+  "/:id",
+  authenticate,
+  requireRoles("admin"),
+  async (req, res, next) => {
+    try {
+      const deleted = await Meal.findByIdAndDelete(req.params.id);
+      if (!deleted)
+        return res.status(404).json({ message: "Meal not found" });
+      res.json({ ok: true });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 export default router;

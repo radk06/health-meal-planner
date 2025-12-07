@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
+
     email: {
       type: String,
       required: true,
@@ -10,13 +11,20 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+
     role: {
       type: String,
       enum: ["user", "admin"],
       default: "user",
     },
+
     goals: { type: String },
+
     passwordHash: { type: String, required: true },
+
+    // Phase 5 MFA fields
+    otpCode: { type: String },
+    otpExpiresAt: { type: Date }
   },
   { timestamps: true }
 );

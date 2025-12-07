@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import axiosClient from "../api/axiosClient";
+import { useNavigate } from "react-router-dom";
 
-function Login({ setToken }) {
+function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -19,14 +21,15 @@ function Login({ setToken }) {
 
     try {
       const res = await axiosClient.post("/auth/login", { email, password });
-      console.log("login response", res.data);
-      const token = res.data?.token;
-      if (!token) {
-        setError("No token received from server");
-        return;
-      }
-      setToken(token);
-      setSuccess("Logged in successfully");
+
+      setSuccess(res.data?.message || "OTP sent to your email");
+
+      // store email so OTP screen knows which account to verify
+      localStorage.setItem("pendingEmail", email);
+
+      setTimeout(() => {
+        navigate("/verify-otp");
+      }, 500);
     } catch (err) {
       const msg = err.response?.data?.message || "Login failed";
       setError(msg);
@@ -60,7 +63,7 @@ function Login({ setToken }) {
             onChange={e => setPassword(e.target.value)}
           />
         </div>
-        <button type="submit">Sign in</button>
+        <button type="submit">Next - send OTP</button>
       </form>
     </section>
   );
