@@ -1,31 +1,24 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-/**
- * Hash a plaintext password
- */
+const SALT_ROUNDS = 10;
+
 export async function hashPassword(plain) {
-  const salt = await bcrypt.genSalt(10);
-  return bcrypt.hash(plain, salt);
+  return bcrypt.hash(plain, SALT_ROUNDS);
 }
 
-/**
- * Compare plaintext password with hashed one
- */
 export async function comparePassword(plain, hash) {
   return bcrypt.compare(plain, hash);
 }
 
-/**
- * Generate signed JWT for user
- */
 export function signToken(user) {
   const payload = {
-    id: user._id,
+    sub: user._id.toString(),
     email: user.email,
     role: user.role,
   };
+
   return jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    expiresIn: "1h",
   });
 }

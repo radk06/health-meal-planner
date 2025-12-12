@@ -3,15 +3,19 @@ import axiosClient from "../api/axiosClient";
 import { useNavigate } from "react-router-dom";
 
 function OtpVerify({ setToken }) {
-  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
     const stored = localStorage.getItem("pendingEmail");
-    if (stored) setEmail(stored);
+    if (!stored) {
+      setError("No login in progress, please login again");
+    } else {
+      setEmail(stored);
+    }
   }, []);
 
   const handleSubmit = async e => {
@@ -19,28 +23,37 @@ function OtpVerify({ setToken }) {
     setError("");
     setSuccess("");
 
-    if (!email || !otp) {
-      setError("Email and OTP are required");
+    if (!email) {
+      setError("No email found, please login again");
+      return;
+    }
+    if (!otp) {
+      setError("OTP is required");
       return;
     }
 
     try {
-      const res = await axiosClient.post("/auth/verify-otp", { email, otp });
+      const res = await axiosClient.post("/auth/verify-otp", {
+        email,
+        otp,
+      });
 
       const token = res.data?.token;
       if (!token) {
-        setError("No token returned from server");
+        setError("No token returned");
         return;
       }
 
-      setToken(token);
-      localStorage.setItem("token", token);
       localStorage.removeItem("pendingEmail");
+      localStorage.setItem("token", token);
+      if (setToken) {
+        setToken(token);
+      }
 
       setSuccess("Login successful");
       setTimeout(() => {
         navigate("/meals");
-      }, 500);
+      }, 400);
     } catch (err) {
       const msg = err.response?.data?.message || "OTP verification failed";
       setError(msg);
@@ -50,28 +63,18 @@ function OtpVerify({ setToken }) {
   return (
     <section>
       <h1>Verify OTP</h1>
-      <p>We have sent a 6 digit code to your email.</p>
+      {email && <p><small>OTP sent for: {email}</small></p>}
+      {error && <p className="error">{error}</p>}
+      {success && <p className="success">{success}</p>}
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {success && <p style={{ color: "green" }}>{success}</p>}
-
-      <form onSubmit={handleSubmit} noValidate>
+      <form onSubmit={handleSubmit}>
         <div>
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            readOnly
-          />
-        </div>
-        <div>
-          <label>OTP code</label>
+          <label>One time code</label>
           <input
             type="text"
-            maxLength={6}
             value={otp}
             onChange={e => setOtp(e.target.value)}
-            placeholder="123456"
+            placeholder="Enter the 6 digit code"
           />
         </div>
         <button type="submit">Verify and login</button>

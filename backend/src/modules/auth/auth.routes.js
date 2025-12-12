@@ -1,21 +1,24 @@
 import express from "express";
-import { body } from "express-validator";
 import validate from "../../middlewares/validate.js";
 import User from "../users/users.model.js";
-import { signupRules, loginRules } from "./auth.validators.js";
+import {
+  signupRules,
+  loginRules,
+  verifyOtpRules,
+} from "./auth.validators.js";
 import { hashPassword, comparePassword, signToken } from "./crypto.js";
 import { sendOtpEmail } from "./email.js";
 
 const router = express.Router();
 
+// helper to generate 6 digit OTP
 function generateOtp() {
-  // 6 digit numeric code as string
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 /**
  * POST /api/auth/signup
- * Register new user and issue JWT.
+ * Register new user and return token.
  */
 router.post("/signup", signupRules, validate, async (req, res, next) => {
   try {
@@ -27,7 +30,13 @@ router.post("/signup", signupRules, validate, async (req, res, next) => {
     }
 
     const passwordHash = await hashPassword(password);
-    const user = await User.create({ name, email, goals, passwordHash });
+    const user = await User.create({
+      name,
+      email,
+      goals,
+      passwordHash,
+      role: "user",
+    });
 
     const token = signToken(user);
     res.status(201).json({
@@ -46,7 +55,7 @@ router.post("/signup", signupRules, validate, async (req, res, next) => {
 
 /**
  * POST /api/auth/login
- * Step 1: Authenticate credentials, generate OTP, send by email.
+ * Step 1 - validate email + password, generate OTP.
  */
 router.post("/login", loginRules, validate, async (req, res, next) => {
   try {
@@ -69,11 +78,10 @@ router.post("/login", loginRules, validate, async (req, res, next) => {
     user.otpExpiresAt = expiresAt;
     await user.save();
 
-    // fire and forget; if email fails, you can still log error
     await sendOtpEmail(user.email, otp);
 
     res.json({
-      message: "OTP sent to your email",
+      message: "OTP generated. Check your email or ask the instructor to see the console log.",
       email: user.email,
     });
   } catch (err) {
@@ -83,16 +91,11 @@ router.post("/login", loginRules, validate, async (req, res, next) => {
 
 /**
  * POST /api/auth/verify-otp
- * Step 2: Verify OTP and issue JWT.
+ * Step 2 - verify OTP, issue final JWT.
  */
 router.post(
   "/verify-otp",
-  [
-    body("email").isEmail().withMessage("Valid email is required"),
-    body("otp")
-      .isLength({ min: 6, max: 6 })
-      .withMessage("OTP must be a 6 digit code"),
-  ],
+  verifyOtpRules,
   validate,
   async (req, res, next) => {
     try {
@@ -100,20 +103,18 @@ router.post(
 
       const user = await User.findOne({ email });
       if (!user || !user.otpCode || !user.otpExpiresAt) {
-        return res
-          .status(400)
-          .json({ message: "No active OTP session for this user" });
+        return res.status(400).json({ message: "OTP not found, please login again" });
       }
 
       if (user.otpCode !== otp) {
-        return res.status(401).json({ message: "Invalid OTP" });
+        return res.status(400).json({ message: "Invalid OTP" });
       }
 
-      if (user.otpExpiresAt.getTime() < Date.now()) {
-        return res.status(401).json({ message: "OTP has expired" });
+      if (user.otpExpiresAt < new Date()) {
+        return res.status(400).json({ message: "OTP has expired" });
       }
 
-      // clear OTP fields
+      // clear OTP after success
       user.otpCode = undefined;
       user.otpExpiresAt = undefined;
       await user.save();

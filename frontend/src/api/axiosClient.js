@@ -1,10 +1,9 @@
 import axios from "axios";
 
 const axiosClient = axios.create({
-  baseURL: "/api"
+  baseURL: "http://localhost:3000/api",
 });
 
-// Attach JWT from localStorage
 axiosClient.interceptors.request.use(config => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -12,14 +11,5 @@ axiosClient.interceptors.request.use(config => {
   }
   return config;
 });
-
-// Optional: simple error logging
-axiosClient.interceptors.response.use(
-  res => res,
-  err => {
-    console.error("API error:", err?.response || err);
-    throw err;
-  }
-);
 
 export default axiosClient;

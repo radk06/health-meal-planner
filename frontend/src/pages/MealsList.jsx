@@ -19,7 +19,7 @@ function MealsList() {
       const res = await axiosClient.get("/meals", {
         params: { q, page, limit }
       });
-      setMeals(res.data?.items || res.data || []);
+      setMeals(res.data.data || []);
       setTotal(res.data?.total || 0);
     } catch (err) {
       const msg = err.response?.data?.message || "Failed to load meals";

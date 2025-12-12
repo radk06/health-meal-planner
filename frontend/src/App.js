@@ -3,28 +3,25 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import OtpVerify from "./pages/OtpVerify";
 import MealsList from "./pages/MealsList";
 import MealCreate from "./pages/MealCreate";
 import MealEdit from "./pages/MealEdit";
-import OtpVerify from "./pages/OtpVerify";
+import "./App.css";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
 
   useEffect(() => {
-    if (token) {
-      localStorage.setItem("token", token);
-    } else {
-      localStorage.removeItem("token");
-    }
+    if (token) localStorage.setItem("token", token);
+    else localStorage.removeItem("token");
   }, [token]);
 
   const handleLogout = () => {
     setToken("");
-    localStorage.removeItem("pendingEmail");
+    localStorage.removeItem("token");
   };
 
-  // Simple guard for protected routes
   const PrivateRoute = ({ children }) => {
     if (!token) return <Navigate to="/login" replace />;
     return children;
@@ -35,13 +32,11 @@ function App() {
       <Layout onLogout={handleLogout} isAuthed={!!token}>
         <Routes>
           <Route path="/" element={<Home />} />
-
-          {/* Step 1 - email + password */}
           <Route path="/login" element={<Login />} />
-
-          {/* Step 2 - OTP verify issues token */}
-          <Route path="/verify-otp" element={<OtpVerify setToken={setToken} />} />
-
+          <Route
+            path="/verify-otp"
+            element={<OtpVerify setToken={setToken} />}
+          />
           <Route
             path="/meals"
             element={

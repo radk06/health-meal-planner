@@ -1,30 +1,48 @@
-import { readJson } from "../../utils/file-db.js";
+import Meal from "../meals/meals.model.js";
 
-const MEALS_PATH = "src/modules/meals/meals.data.json";
-const INGS_PATH  = "src/modules/ingredients/ingredients.data.json";
+/**
+ * Build a shopping list for the given meal ids.
+ * For each ingredient string in the meals, aggregate how many times it appears
+ * and which meals use it.
+ */
+export async function buildShoppingList(mealIds) {
+  const meals = await Meal.find({ _id: { $in: mealIds } });
 
-// With the new meals schema, ingredients are strings.
-// We'll compute a list of ingredient names missing from pantry.
-export async function buildShoppingList(mealIds = []) {
-  const meals = await readJson(MEALS_PATH, []);
-  const pantry = await readJson(INGS_PATH, []);
+  const itemsMap = new Map();
 
-  const chosen = mealIds.length ? meals.filter(m => mealIds.includes(m.id)) : [];
+  for (const meal of meals) {
+    if (!Array.isArray(meal.ingredients)) continue;
 
-  const haveSet = new Set(
-    pantry.map(i => i.name.trim().toLowerCase())
-  );
+    for (const ing of meal.ingredients) {
+      const name =
+        typeof ing === "string"
+          ? ing
+          : ing?.name
+          ? ing.name
+          : String(ing);
 
-  const needed = new Map(); // key=name, value={name, count}
-
-  for (const meal of chosen) {
-    for (const ingName of meal.ingredients || []) {
-      const key = ingName.trim().toLowerCase();
-      if (!haveSet.has(key)) {
-        needed.set(key, { name: ingName, count: (needed.get(key)?.count || 0) + 1 });
+      if (!itemsMap.has(name)) {
+        itemsMap.set(name, {
+          name,
+          count: 1,
+          meals: [meal.title],
+        });
+      } else {
+        const item = itemsMap.get(name);
+        item.count += 1;
+        if (!item.meals.includes(meal.title)) {
+          item.meals.push(meal.title);
+        }
       }
     }
   }
 
-  return Array.from(needed.values());
+  return {
+    meals: meals.map(m => ({ id: m._id, title: m.title })),
+    items: Array.from(itemsMap.values()),
+  };
 }
+
+export default {
+  buildShoppingList,
+};

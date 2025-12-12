@@ -22,14 +22,14 @@ function Login() {
     try {
       const res = await axiosClient.post("/auth/login", { email, password });
 
-      setSuccess(res.data?.message || "OTP sent to your email");
+      setSuccess(res.data?.message || "OTP generated");
 
-      // store email so OTP screen knows which account to verify
+      // remember email for next step
       localStorage.setItem("pendingEmail", email);
 
       setTimeout(() => {
         navigate("/verify-otp");
-      }, 500);
+      }, 400);
     } catch (err) {
       const msg = err.response?.data?.message || "Login failed";
       setError(msg);
@@ -39,8 +39,8 @@ function Login() {
   return (
     <section>
       <h1>Login</h1>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {success && <p style={{ color: "green" }}>{success}</p>}
+      {error && <p className="error">{error}</p>}
+      {success && <p className="success">{success}</p>}
 
       <form onSubmit={handleSubmit} noValidate>
         <div>
