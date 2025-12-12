@@ -7,6 +7,7 @@ import OtpVerify from "./pages/OtpVerify";
 import MealsList from "./pages/MealsList";
 import MealCreate from "./pages/MealCreate";
 import MealEdit from "./pages/MealEdit";
+import ShoppingList from "./pages/ShoppingList";
 import "./App.css";
 
 function App() {
@@ -58,6 +59,14 @@ function App() {
             element={
               <PrivateRoute>
                 <MealEdit />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/shopping"
+            element={
+              <PrivateRoute>
+                <ShoppingList />
               </PrivateRoute>
             }
           />
