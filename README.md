@@ -1,4 +1,10 @@
-Health & Meal Prep Planner
+## Health & Meal Prep Planner ##
+
+A full stack MERN application for planning meals, generating shopping lists,  
+searching ingredients and recipes, and supporting personalized nutrition goals.
+
+This app includes multi factor authentication, role based access control,  
+modular Express architecture, and a fully integrated React frontend.
 
 --------------------------------------------------------------------------------------------------------------------------------------
 
