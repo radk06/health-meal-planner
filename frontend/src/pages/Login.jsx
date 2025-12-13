@@ -9,27 +9,30 @@ function Login() {
   const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    if (!email || !password) {
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail || !password) {
       setError("Email and password are required");
       return;
     }
 
     try {
-      const res = await axiosClient.post("/auth/login", { email, password });
+      const res = await axiosClient.post("/auth/login", {
+        email: cleanEmail,
+        password,
+      });
 
       setSuccess(res.data?.message || "OTP generated");
 
-      // remember email for next step
-      localStorage.setItem("pendingEmail", email);
+      // store the exact email used
+      localStorage.setItem("pendingEmail", cleanEmail);
 
-      setTimeout(() => {
-        navigate("/verify-otp");
-      }, 400);
+      navigate("/verify-otp");
     } catch (err) {
       const msg = err.response?.data?.message || "Login failed";
       setError(msg);
@@ -49,10 +52,12 @@ function Login() {
             type="email"
             required
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
+            autoComplete="email"
           />
         </div>
+
         <div>
           <label>Password</label>
           <input
@@ -60,9 +65,11 @@ function Login() {
             required
             minLength={6}
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
           />
         </div>
+
         <button type="submit">Next - send OTP</button>
       </form>
     </section>
